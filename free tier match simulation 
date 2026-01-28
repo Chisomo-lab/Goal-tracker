@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Free Tier Match Simulation</title>
+<style>
+    body { margin:0; font-family: Arial, sans-serif; background:#eaeaea; display:flex; flex-direction:column; align-items:center; }
+    h2 { margin:20px; }
+    .match-container { display:flex; gap:20px; flex-wrap:wrap; justify-content:center; }
+
+    /* Pitch */
+    .pitch { position:relative; width:600px; height:400px; background:#4caf50; border:2px solid #fff; border-radius:8px; }
+    .player { position:absolute; width:25px; height:25px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.7em; font-weight:bold; cursor:pointer; }
+    .teamA { background:#1976d2; }
+    .teamB { background:#e53935; }
+    .ball { position:absolute; width:15px; height:15px; border-radius:50%; background:#ffeb3b; border:1px solid #000; }
+
+    /* Stats sidebar */
+    .stats { width:200px; background:#fff; padding:15px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.2); height:400px; overflow:auto; }
+    .stats h3 { margin-bottom:10px; }
+    .event { margin-bottom:8px; font-size:0.9em; }
+    .event.goal { color:#ffeb3b; font-weight:bold; }
+    .event.card { color:#f44336; font-weight:bold; }
+
+    .container-flex { display:flex; gap:20px; flex-wrap:wrap; justify-content:center; margin-bottom:50px; }
+</style>
+</head>
+<body>
+
+<h2>Free Tier Match Simulation: Arsenal vs Man City</h2>
+<div class="container-flex">
+    <div class="pitch" id="pitch"></div>
+    <div class="stats" id="stats">
+        <h3>Match Events</h3>
+        <div id="eventList"></div>
+    </div>
+</div>
+
+<script>
+// Sample players data
+const teamAPlayers = [
+    {name:'A1', x:50, y:50}, {name:'A2', x:150, y:50}, {name:'A3', x:250, y:50}, 
+    {name:'A4', x:350, y:50}, {name:'A5', x:450, y:50}, {name:'A6', x:100, y:150},
+    {name:'A7', x:200, y:150}, {name:'A8', x:300, y:150}, {name:'A9', x:400, y:150},
+    {name:'A10', x:150, y:250}, {name:'A11', x:300, y:250}
+];
+const teamBPlayers = [
+    {name:'B1', x:50, y:350}, {name:'B2', x:150, y:350}, {name:'B3', x:250, y:350}, 
+    {name:'B4', x:350, y:350}, {name:'B5', x:450, y:350}, {name:'B6', x:100, y:250},
+    {name:'B7', x:200, y:250}, {name:'B8', x:300, y:250}, {name:'B9', x:400, y:250},
+    {name:'B10', x:150, y:150}, {name:'B11', x:300, y:150}
+];
+
+// Ball
+let ball = {x:300, y:200, holder:'A1'};
+
+// Pitch DOM
+const pitch = document.getElementById('pitch');
+
+// Render players
+teamAPlayers.forEach(p => {
+    const div = document.createElement('div');
+    div.className='player teamA';
+    div.id=p.name;
+    div.style.left=p.x+'px';
+    div.style.top=p.y+'px';
+    div.innerText=p.name;
+    pitch.appendChild(div);
+});
+teamBPlayers.forEach(p => {
+    const div = document.createElement('div');
+    div.className='player teamB';
+    div.id=p.name;
+    div.style.left=p.x+'px';
+    div.style.top=p.y+'px';
+    div.innerText=p.name;
+    pitch.appendChild(div);
+});
+
+// Ball element
+const ballDiv = document.createElement('div');
+ballDiv.className='ball';
+pitch.appendChild(ballDiv);
+
+// Stats / Event list
+const eventList = document.getElementById('eventList');
+
+// Simulated events
+const events = [
+    {time:1, type:'pass', from:'A1', to:'A2', text:'A1 passed to A2'},
+    {time:3, type:'pass', from:'A2', to:'A3', text:'A2 passed to A3'},
+    {time:5, type:'goal', player:'A3', text:'GOAL by A3!'},
+    {time:8, type:'card', player:'B4', text:'Yellow card for B4'},
+    {time:10, type:'pass', from:'B2', to:'B3', text:'B2 passed to B3'},
+    {time:12, type:'goal', player:'B3', text:'GOAL by B3!'}
+];
+
+// Function to move ball
+function moveBall(holder) {
+    const playerDiv = document.getElementById(holder);
+    ballDiv.style.left = (playerDiv.offsetLeft + 5) + 'px';
+    ballDiv.style.top = (playerDiv.offsetTop + 5) + 'px';
+}
+
+// Simulate events
+let i=0;
+function nextEvent() {
+    if(i>=events.length) return;
+    const e = events[i];
+    if(e.type==='pass') {
+        ball.holder = e.to;
+        moveBall(ball.holder);
+    } else if(e.type==='goal' || e.type==='card') {
+        // highlight player briefly
+        const pDiv = document.getElementById(e.player);
+        pDiv.style.border='2px solid yellow';
+        setTimeout(()=>pDiv.style.border='none',1000);
+    }
+    // Add to event list
+    const div = document.createElement('div');
+    div.className='event ' + e.type;
+    div.innerText=e.text;
+    eventList.appendChild(div);
+    eventList.scrollTop = eventList.scrollHeight;
+    i++;
+}
+
+// Initial ball position
+moveBall(ball.holder);
+
+// Run events every 2 seconds
+setInterval(nextEvent, 2000);
+
+</script>
+</body>
+</html>

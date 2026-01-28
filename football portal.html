@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Football Portal - Live, Highlights & News</title>
+<style>
+body { margin:0; font-family: Arial, sans-serif; background:#f4f4f4; }
+h2,h3 { text-align:center; margin:20px 0; }
+
+/* Scoreboard + Timer */
+.scoreboard { display:flex; justify-content:space-between; width:600px; padding:10px 20px; background:#1a1a1a; color:#fff; border-radius:8px; margin:0 auto 5px; }
+.team { font-weight:bold; font-size:1.1em; }
+.score { font-size:1.2em; }
+.timer { font-size:1.1em; }
+
+/* Possession bar */
+.possession-container { width:600px; background:#ccc; height:15px; border-radius:8px; margin:0 auto 20px; position:relative; }
+.teamA-pos { background:#1976d2; height:15px; border-radius:8px 0 0 8px; position:absolute; left:0; top:0; transition:width 1s; }
+.teamB-pos { background:#e53935; height:15px; border-radius:0 8px 8px 0; position:absolute; right:0; top:0; transition:width 1s; }
+
+/* Match container */
+.match-container { display:flex; gap:20px; flex-wrap:wrap; justify-content:center; margin-bottom:40px; }
+.pitch { position:relative; width:600px; height:400px; background:#4caf50; border:2px solid #fff; border-radius:8px; overflow:hidden; }
+.player { position:absolute; width:25px; height:25px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.7em; font-weight:bold; cursor:pointer; transition:0.2s; }
+.teamA { background:#1976d2; }
+.teamB { background:#e53935; }
+.ball { position:absolute; width:15px; height:15px; border-radius:50%; background:#ffeb3b; border:1px solid #000; transition:left 1s linear, top 1s linear; }
+.pass-line { position:absolute; background:#fff; height:2px; transform-origin:left center; opacity:0.8; transition:opacity 1s; }
+.stats { width:200px; background:#fff; padding:15px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.2); height:400px; overflow:auto; }
+.stats h3 { margin-bottom:10px; }
+.event { margin-bottom:8px; font-size:0.9em; }
+.event.goal { color:#ffeb3b; font-weight:bold; }
+.event.card { color:#f44336; font-weight:bold; }
+
+/* Highlights Section */
+.highlights { width:90%; max-width:1000px; margin:0 auto 40px; }
+.highlight-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:15px; }
+.highlight-card { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.2); cursor:pointer; transition:transform 0.2s; }
+.highlight-card:hover { transform:scale(1.03); }
+.highlight-card img { width:100%; height:120px; object-fit:cover; }
+.highlight-info { padding:10px; }
+.highlight-info span { font-weight:bold; }
+
+/* News Section */
+.news { width:90%; max-width:1000px; margin:0 auto 40px; }
+.news-feed { display:flex; flex-direction:column; gap:10px; max-height:400px; overflow-y:auto; }
+.news-card { background:#fff; padding:10px 15px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.15); transition:background 0.2s; }
+.news-card:hover { background:#e0f7fa; }
+.news-card img { width:50px; height:50px; object-fit:cover; border-radius:50%; margin-right:10px; }
+.news-content { display:flex; align-items:center; gap:10px; }
+.news-text { flex:1; }
+.news-date { font-size:0.8em; color:#666; }
+</style>
+</head>
+<body>
+
+<h2>Football Portal</h2>
+
+<!-- Live Match Section -->
+<div class="scoreboard">
+    <div class="team">Arsenal</div>
+    <div class="score" id="scoreboard">2 - 1</div>
+    <div class="team">Man City</div>
+    <div class="timer" id="matchTimer">0:00</div>
+</div>
+<div class="possession-container">
+    <div class="teamA-pos" id="teamAPos"></div>
+    <div class="teamB-pos" id="teamBPos"></div>
+</div>
+<div class="match-container">
+    <div class="pitch" id="pitch"></div>
+    <div class="stats" id="stats">
+        <h3>Match Events</h3>
+        <div id="eventList"></div>
+    </div>
+</div>
+
+<!-- Highlights Section -->
+<div class="highlights">
+    <h3>Top Highlights</h3>
+    <div class="highlight-grid" id="highlightGrid"></div>
+</div>
+
+<!-- News Section -->
+<div class="news">
+    <h3>Latest News</h3>
+    <div class="news-feed" id="newsFeed"></div>
+</div>
+
+<script>
+// --- Live Match Simulation ---
+const teamAPlayers = [
+    {name:'A1',x:50,y:50},{name:'A2',x:150,y:50},{name:'A3',x:250,y:50},{name:'A4',x:350,y:50},{name:'A5',x:450,y:50},
+    {name:'A6',x:100,y:150},{name:'A7',x:200,y:150},{name:'A8',x:300,y:150},{name:'A9',x:400,y:150},{name:'A10',x:150,y:250},{name:'A11',x:300,y:250}
+];
+const teamBPlayers = [
+    {name:'B1',x:50,y:350},{name:'B2',x:150,y:350},{name:'B3',x:250,y:350},{name:'B4',x:350,y:350},{name:'B5',x:450,y:350},
+    {name:'B6',x:100,y:250},{name:'B7',x:200,y:250},{name:'B8',x:300,y:250},{name:'B9',x:400,y:250},{name:'B10',x:150,y:150},{name:'B11',x:300,y:150}
+];
+
+let ball={x:300,y:200,holder:'A1'}, score={A:2,B:1}, possession={A:60,B:40};
+const pitch=document.getElementById('pitch'), eventList=document.getElementById('eventList'),
+scoreboard=document.getElementById('scoreboard'), teamAPos=document.getElementById('teamAPos'),
+teamBPos=document.getElementById('teamBPos'), matchTimer=document.getElementById('matchTimer');
+
+[...teamAPlayers,...teamBPlayers].forEach(p=>{
+    const div=document.createElement('div'); div.className='player '+(p.name.startsWith('A')?'teamA':'teamB'); div.id=p.name;
+    div.style.left=p.x+'px'; div.style.top=p.y+'px'; div.innerText=p.name; pitch.appendChild(div);
+});
+
+const ballDiv=document.createElement('div'); ballDiv.className='ball'; pitch.appendChild(ballDiv);
+function updatePossession(){ teamAPos.style.width=possession.A+'%'; teamBPos.style.width=possession.B+'%'; }
+function moveBall(holder,from=null){
+    const playerDiv=document.getElementById(holder), targetX=playerDiv.offsetLeft+5, targetY=playerDiv.offsetTop+5;
+    if(from){
+        const fromDiv=document.getElementById(from), line=document.createElement('div');
+        line.className='pass-line'; const dx=targetX-(fromDiv.offsetLeft+5), dy=targetY-(fromDiv.offsetTop+5);
+        const length=Math.sqrt(dx*dx+dy*dy), angle=Math.atan2(dy,dx)*180/Math.PI;
+        line.style.width=length+'px'; line.style.left=(fromDiv.offsetLeft+5)+'px'; line.style.top=(fromDiv.offsetTop+5)+'px';
+        line.style.transform=`rotate(${angle}deg)`; pitch.appendChild(line);
+        setTimeout(()=>line.style.opacity='0',1000); setTimeout(()=>line.remove(),1500);
+    }
+    ballDiv.style.left=targetX+'px'; ballDiv.style.top=targetY+'px';
+    document.querySelectorAll('.player').forEach(p=>p.style.boxShadow='none');
+    playerDiv.style.boxShadow='0 0 15px 3px yellow';
+}
+
+const events=[
+    {time:1,type:'pass',from:'A1',to:'A2',text:'A1 passed to A2'},
+    {time:3,type:'pass',from:'A2',to:'A3',text:'A2 passed to A3'},
+    {time:5,type:'goal',player:'A3',text:'GOAL by A3!'},
+    {time:7,type:'card',player:'B4',text:'Yellow card for B4'},
+    {time:9,type:'pass',from:'B2',to:'B3',text:'B2 passed to B3'},
+    {time:12,type:'goal',player:'B3',text:'GOAL by B3!'}
+];
+
+let i=0; function nextEvent(){
+    if(i>=events.length) return; const e=events[i];
+    if(e.type==='pass'){ const prevHolder=ball.holder; ball.holder=e.to; moveBall(ball.holder,prevHolder);
+        possession.A=Math.max(30,Math.min(70,possession.A+(Math.random()*10-5))); possession.B=100-possession.A; updatePossession();
+    } else if(e.type==='goal'){ if(e.player.startsWith('A')) score.A++; else score.B++; scoreboard.innerText=score.A+' - '+score.B;
+        const pDiv=document.getElementById(e.player); pDiv.style.border='2px solid yellow'; setTimeout(()=>pDiv.style.border='none',1000);
+    } else if(e.type==='card'){ const pDiv=document.getElementById(e.player); pDiv.style.border='2px solid red'; setTimeout(()=>pDiv.style.border='none',1000);}
+    const div=document.createElement('div'); div.className='event '+e.type; div.innerText=e.text; eventList.appendChild(div); eventList.scrollTop=eventList.scrollHeight; i++;
+}
+
+moveBall(ball.holder); updatePossession();
+setInterval(nextEvent,2000);
+let seconds=0; setInterval(()=>{ seconds++; const mins=Math.floor(seconds/60); const secs=seconds%60; matchTimer.innerText=`${mins}:${secs.toString().padStart(2,'0')}`; },1000);
+
+// --- Highlights ---
+const highlights=[
+    {match:"Arsenal vs Man City", minute:"23'", img:"https://via.placeholder.com/400x200?text=Goal+1"},
+    {match:"Liverpool vs Chelsea", minute:"45+2'", img:"https://via.placeholder.com/400x200?text=Top+Save"},
+    {match:"Real Madrid vs Barcelona", minute:"67'", img:"https://via.placeholder.com/400x200?text=Goal+2"},
+    {match:"Bayern vs Dortmund", minute:"12'", img:"https://via.placeholder.com/400x200?text=Assist+Highlight"}
+];
+const highlightGrid=document.getElementById('highlightGrid');
+highlights.forEach(h=>{ const card=document.createElement('div'); card.className='highlight-card';
+card.innerHTML=`<img src="${h.img}" alt="${h.match}"><div class="highlight-info"><span>${h.match}</span><br>${h.minute}</div>`; highlightGrid.appendChild(card);
+});
+
+// --- News ---
+const news=[
+    {title:"Messi signs new contract", snippet:"Lionel Messi extends his deal...", date:"Jan 28, 2026", img:"https://via.placeholder.com/50"},
+    {title:"Liverpool beats Chelsea 3-1", snippet:"An amazing comeback led by...", date:"Jan 27, 2026", img:"https://via.placeholder.com/50"},
+    {title:"Champions League fixtures announced", snippet:"UCL group stages are out...", date:"Jan 26, 2026", img:"https://via.placeholder.com/50"},
+    {title:"Injury update: Neymar", snippet:"Neymar expected to return...", date:"Jan 25, 2026", img:"https://via.placeholder.com/50"}
+];
+const newsFeed=document.getElementById('newsFeed');
+news.forEach(n=>{ const card=document.createElement('div'); card.className='news-card';
+card.innerHTML=`<div class="news-content"><img src="${n.img}" alt="news"><div class="news-text"><strong>${n.title}</strong><br>${n.snippet}<div class="news-date">${n.date}</div></div></div>`; newsFeed.appendChild(card);
+});
+</script>
+</body>
+</html>

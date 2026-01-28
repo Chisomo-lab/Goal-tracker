@@ -3,10 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Football Portal - Live, Highlights & News</title>
+<title>Football Portal - Live + Highlights + News</title>
 <style>
 body { margin:0; font-family: Arial, sans-serif; background:#f4f4f4; }
 h2,h3 { text-align:center; margin:20px 0; }
+.filter-container { display:flex; justify-content:center; gap:15px; margin-bottom:20px; flex-wrap:wrap; }
+select { padding:5px 10px; border-radius:5px; border:1px solid #ccc; }
 
 /* Scoreboard + Timer */
 .scoreboard { display:flex; justify-content:space-between; width:600px; padding:10px 20px; background:#1a1a1a; color:#fff; border-radius:8px; margin:0 auto 5px; }
@@ -57,6 +59,27 @@ h2,h3 { text-align:center; margin:20px 0; }
 
 <h2>Football Portal</h2>
 
+<!-- Filters -->
+<div class="filter-container">
+    <select id="leagueFilter">
+        <option value="all">All Leagues</option>
+        <option value="Premier League">Premier League</option>
+        <option value="La Liga">La Liga</option>
+        <option value="Bundesliga">Bundesliga</option>
+    </select>
+    <select id="teamFilter">
+        <option value="all">All Teams</option>
+        <option value="Arsenal">Arsenal</option>
+        <option value="Man City">Man City</option>
+        <option value="Liverpool">Liverpool</option>
+        <option value="Chelsea">Chelsea</option>
+        <option value="Real Madrid">Real Madrid</option>
+        <option value="Barcelona">Barcelona</option>
+        <option value="Bayern">Bayern</option>
+        <option value="Dortmund">Dortmund</option>
+    </select>
+</div>
+
 <!-- Live Match Section -->
 <div class="scoreboard">
     <div class="team">Arsenal</div>
@@ -89,15 +112,11 @@ h2,h3 { text-align:center; margin:20px 0; }
 </div>
 
 <script>
-// --- Live Match Simulation ---
-const teamAPlayers = [
-    {name:'A1',x:50,y:50},{name:'A2',x:150,y:50},{name:'A3',x:250,y:50},{name:'A4',x:350,y:50},{name:'A5',x:450,y:50},
-    {name:'A6',x:100,y:150},{name:'A7',x:200,y:150},{name:'A8',x:300,y:150},{name:'A9',x:400,y:150},{name:'A10',x:150,y:250},{name:'A11',x:300,y:250}
-];
-const teamBPlayers = [
-    {name:'B1',x:50,y:350},{name:'B2',x:150,y:350},{name:'B3',x:250,y:350},{name:'B4',x:350,y:350},{name:'B5',x:450,y:350},
-    {name:'B6',x:100,y:250},{name:'B7',x:200,y:250},{name:'B8',x:300,y:250},{name:'B9',x:400,y:250},{name:'B10',x:150,y:150},{name:'B11',x:300,y:150}
-];
+// ----------------------
+// Live Match Simulation
+// ----------------------
+const teamAPlayers=[{name:'A1',x:50,y:50},{name:'A2',x:150,y:50},{name:'A3',x:250,y:50},{name:'A4',x:350,y:50},{name:'A5',x:450,y:50},{name:'A6',x:100,y:150},{name:'A7',x:200,y:150},{name:'A8',x:300,y:150},{name:'A9',x:400,y:150},{name:'A10',x:150,y:250},{name:'A11',x:300,y:250}];
+const teamBPlayers=[{name:'B1',x:50,y:350},{name:'B2',x:150,y:350},{name:'B3',x:250,y:350},{name:'B4',x:350,y:350},{name:'B5',x:450,y:350},{name:'B6',x:100,y:250},{name:'B7',x:200,y:250},{name:'B8',x:300,y:250},{name:'B9',x:400,y:250},{name:'B10',x:150,y:150},{name:'B11',x:300,y:150}];
 
 let ball={x:300,y:200,holder:'A1'}, score={A:2,B:1}, possession={A:60,B:40};
 const pitch=document.getElementById('pitch'), eventList=document.getElementById('eventList'),
@@ -149,29 +168,63 @@ moveBall(ball.holder); updatePossession();
 setInterval(nextEvent,2000);
 let seconds=0; setInterval(()=>{ seconds++; const mins=Math.floor(seconds/60); const secs=seconds%60; matchTimer.innerText=`${mins}:${secs.toString().padStart(2,'0')}`; },1000);
 
-// --- Highlights ---
+// ----------------------
+// Highlights & News Data
+// ----------------------
 const highlights=[
-    {match:"Arsenal vs Man City", minute:"23'", img:"https://via.placeholder.com/400x200?text=Goal+1"},
-    {match:"Liverpool vs Chelsea", minute:"45+2'", img:"https://via.placeholder.com/400x200?text=Top+Save"},
-    {match:"Real Madrid vs Barcelona", minute:"67'", img:"https://via.placeholder.com/400x200?text=Goal+2"},
-    {match:"Bayern vs Dortmund", minute:"12'", img:"https://via.placeholder.com/400x200?text=Assist+Highlight"}
+    {match:"Arsenal vs Man City", league:"Premier League", team:["Arsenal","Man City"], minute:"23'", img:"https://via.placeholder.com/400x200?text=Goal+1"},
+    {match:"Liverpool vs Chelsea", league:"Premier League", team:["Liverpool","Chelsea"], minute:"45+2'", img:"https://via.placeholder.com/400x200?text=Top+Save"},
+    {match:"Real Madrid vs Barcelona", league:"La Liga", team:["Real Madrid","Barcelona"], minute:"67'", img:"https://via.placeholder.com/400x200?text=Goal+2"},
+    {match:"Bayern vs Dortmund", league:"Bundesliga", team:["Bayern","Dortmund"], minute:"12'", img:"https://via.placeholder.com/400x200?text=Assist+Highlight"}
 ];
-const highlightGrid=document.getElementById('highlightGrid');
-highlights.forEach(h=>{ const card=document.createElement('div'); card.className='highlight-card';
-card.innerHTML=`<img src="${h.img}" alt="${h.match}"><div class="highlight-info"><span>${h.match}</span><br>${h.minute}</div>`; highlightGrid.appendChild(card);
-});
-
-// --- News ---
 const news=[
-    {title:"Messi signs new contract", snippet:"Lionel Messi extends his deal...", date:"Jan 28, 2026", img:"https://via.placeholder.com/50"},
-    {title:"Liverpool beats Chelsea 3-1", snippet:"An amazing comeback led by...", date:"Jan 27, 2026", img:"https://via.placeholder.com/50"},
-    {title:"Champions League fixtures announced", snippet:"UCL group stages are out...", date:"Jan 26, 2026", img:"https://via.placeholder.com/50"},
-    {title:"Injury update: Neymar", snippet:"Neymar expected to return...", date:"Jan 25, 2026", img:"https://via.placeholder.com/50"}
+    {title:"Messi signs new contract", league:"La Liga", team:["Barcelona"], snippet:"Lionel Messi extends his deal...", date:"Jan 28, 2026", img:"https://via.placeholder.com/50"},
+    {title:"Liverpool beats Chelsea 3-1", league:"Premier League", team:["Liverpool","Chelsea"], snippet:"An amazing comeback led by...", date:"Jan 27, 2026", img:"https://via.placeholder.com/50"},
+    {title:"Champions League fixtures announced", league:"All", team:[], snippet:"UCL group stages are out...", date:"Jan 26, 2026", img:"https://via.placeholder.com/50"},
+    {title:"Injury update: Neymar", league:"La Liga", team:["Paris Saint-Germain"], snippet:"Neymar expected to return...", date:"Jan 25, 2026", img:"https://via.placeholder.com/50"}
 ];
+
+// DOM
+const highlightGrid=document.getElementById('highlightGrid');
 const newsFeed=document.getElementById('newsFeed');
-news.forEach(n=>{ const card=document.createElement('div'); card.className='news-card';
-card.innerHTML=`<div class="news-content"><img src="${n.img}" alt="news"><div class="news-text"><strong>${n.title}</strong><br>${n.snippet}<div class="news-date">${n.date}</div></div></div>`; newsFeed.appendChild(card);
-});
+const leagueFilter=document.getElementById('leagueFilter');
+const teamFilter=document.getElementById('teamFilter');
+
+function renderHighlights(){
+    highlightGrid.innerHTML='';
+    const selectedLeague=leagueFilter.value;
+    const selectedTeam=teamFilter.value;
+    highlights.forEach(h=>{
+        if((selectedLeague==='all' || h.league===selectedLeague) && 
+           (selectedTeam==='all' || h.team.includes(selectedTeam))){
+            const card=document.createElement('div'); card.className='highlight-card';
+            card.innerHTML=`<img src="${h.img}" alt="${h.match}"><div class="highlight-info"><span>${h.match}</span><br>${h.minute}</div>`;
+            highlightGrid.appendChild(card);
+        }
+    });
+}
+
+function renderNews(){
+    newsFeed.innerHTML='';
+    const selectedLeague=leagueFilter.value;
+    const selectedTeam=teamFilter.value;
+    news.forEach(n=>{
+        if((selectedLeague==='all' || n.league===selectedLeague || n.league==="All") &&
+           (selectedTeam==='all' || n.team.includes(selectedTeam) || n.team.length===0)){
+            const card=document.createElement('div'); card.className='news-card';
+            card.innerHTML=`<div class="news-content"><img src="${n.img}" alt="news"><div class="news-text"><strong>${n.title}</strong><br>${n.snippet}<div class="news-date">${n.date}</div></div></div>`;
+            newsFeed.appendChild(card);
+        }
+    });
+}
+
+// Initial render
+renderHighlights();
+renderNews();
+
+// Event Listeners
+leagueFilter.addEventListener('change',()=>{ renderHighlights(); renderNews(); });
+teamFilter.addEventListener('change',()=>{ renderHighlights(); renderNews(); });
 </script>
 </body>
 </html>

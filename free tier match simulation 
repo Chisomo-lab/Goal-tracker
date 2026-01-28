@@ -3,33 +3,60 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Free Tier Match Simulation</title>
+<title>Free Tier Match Simulation - Final</title>
 <style>
-    body { margin:0; font-family: Arial, sans-serif; background:#eaeaea; display:flex; flex-direction:column; align-items:center; }
-    h2 { margin:20px; }
-    .match-container { display:flex; gap:20px; flex-wrap:wrap; justify-content:center; }
+body { margin:0; font-family: Arial, sans-serif; background:#eaeaea; display:flex; flex-direction:column; align-items:center; }
+h2 { margin:20px; }
 
-    /* Pitch */
-    .pitch { position:relative; width:600px; height:400px; background:#4caf50; border:2px solid #fff; border-radius:8px; }
-    .player { position:absolute; width:25px; height:25px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.7em; font-weight:bold; cursor:pointer; }
-    .teamA { background:#1976d2; }
-    .teamB { background:#e53935; }
-    .ball { position:absolute; width:15px; height:15px; border-radius:50%; background:#ffeb3b; border:1px solid #000; }
+/* Scoreboard + Timer */
+.scoreboard { display:flex; justify-content:space-between; width:600px; padding:10px 20px; background:#1a1a1a; color:#fff; border-radius:8px; margin-bottom:5px; }
+.team { font-weight:bold; font-size:1.1em; }
+.score { font-size:1.2em; }
+.timer { font-size:1.1em; }
 
-    /* Stats sidebar */
-    .stats { width:200px; background:#fff; padding:15px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.2); height:400px; overflow:auto; }
-    .stats h3 { margin-bottom:10px; }
-    .event { margin-bottom:8px; font-size:0.9em; }
-    .event.goal { color:#ffeb3b; font-weight:bold; }
-    .event.card { color:#f44336; font-weight:bold; }
+/* Possession bar */
+.possession-container { width:600px; background:#ccc; height:15px; border-radius:8px; margin-bottom:20px; position:relative; }
+.teamA-pos { background:#1976d2; height:15px; border-radius:8px 0 0 8px; position:absolute; left:0; top:0; transition:width 1s; }
+.teamB-pos { background:#e53935; height:15px; border-radius:0 8px 8px 0; position:absolute; right:0; top:0; transition:width 1s; }
 
-    .container-flex { display:flex; gap:20px; flex-wrap:wrap; justify-content:center; margin-bottom:50px; }
+/* Match container */
+.match-container { display:flex; gap:20px; flex-wrap:wrap; justify-content:center; }
+
+/* Pitch */
+.pitch { position:relative; width:600px; height:400px; background:#4caf50; border:2px solid #fff; border-radius:8px; overflow:hidden; }
+.player { position:absolute; width:25px; height:25px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.7em; font-weight:bold; cursor:pointer; transition:0.2s; }
+.teamA { background:#1976d2; }
+.teamB { background:#e53935; }
+.ball { position:absolute; width:15px; height:15px; border-radius:50%; background:#ffeb3b; border:1px solid #000; transition:left 1s linear, top 1s linear; }
+.pass-line { position:absolute; background:#fff; height:2px; transform-origin:left center; opacity:0.8; transition:opacity 1s; }
+
+/* Stats sidebar */
+.stats { width:200px; background:#fff; padding:15px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.2); height:400px; overflow:auto; }
+.stats h3 { margin-bottom:10px; }
+.event { margin-bottom:8px; font-size:0.9em; }
+.event.goal { color:#ffeb3b; font-weight:bold; }
+.event.card { color:#f44336; font-weight:bold; }
 </style>
 </head>
 <body>
 
 <h2>Free Tier Match Simulation: Arsenal vs Man City</h2>
-<div class="container-flex">
+
+<!-- Scoreboard + Timer -->
+<div class="scoreboard">
+    <div class="team">Arsenal</div>
+    <div class="score" id="scoreboard">2 - 1</div>
+    <div class="team">Man City</div>
+    <div class="timer" id="matchTimer">0:00</div>
+</div>
+
+<!-- Possession Bar -->
+<div class="possession-container">
+    <div class="teamA-pos" id="teamAPos"></div>
+    <div class="teamB-pos" id="teamBPos"></div>
+</div>
+
+<div class="match-container">
     <div class="pitch" id="pitch"></div>
     <div class="stats" id="stats">
         <h3>Match Events</h3>
@@ -38,7 +65,7 @@
 </div>
 
 <script>
-// Sample players data
+// Players
 const teamAPlayers = [
     {name:'A1', x:50, y:50}, {name:'A2', x:150, y:50}, {name:'A3', x:250, y:50}, 
     {name:'A4', x:350, y:50}, {name:'A5', x:450, y:50}, {name:'A6', x:100, y:150},
@@ -55,12 +82,23 @@ const teamBPlayers = [
 // Ball
 let ball = {x:300, y:200, holder:'A1'};
 
-// Pitch DOM
+// Scores
+let score = {A:2, B:1};
+
+// Possession
+let possession = {A:60, B:40};
+
+// DOM
 const pitch = document.getElementById('pitch');
+const eventList = document.getElementById('eventList');
+const scoreboard = document.getElementById('scoreboard');
+const teamAPos = document.getElementById('teamAPos');
+const teamBPos = document.getElementById('teamBPos');
+const matchTimer = document.getElementById('matchTimer');
 
 // Render players
-teamAPlayers.forEach(p => {
-    const div = document.createElement('div');
+teamAPlayers.forEach(p=>{
+    const div=document.createElement('div');
     div.className='player teamA';
     div.id=p.name;
     div.style.left=p.x+'px';
@@ -68,8 +106,8 @@ teamAPlayers.forEach(p => {
     div.innerText=p.name;
     pitch.appendChild(div);
 });
-teamBPlayers.forEach(p => {
-    const div = document.createElement('div');
+teamBPlayers.forEach(p=>{
+    const div=document.createElement('div');
     div.className='player teamB';
     div.id=p.name;
     div.style.left=p.x+'px';
@@ -78,59 +116,106 @@ teamBPlayers.forEach(p => {
     pitch.appendChild(div);
 });
 
-// Ball element
+// Ball
 const ballDiv = document.createElement('div');
 ballDiv.className='ball';
 pitch.appendChild(ballDiv);
 
-// Stats / Event list
-const eventList = document.getElementById('eventList');
-
-// Simulated events
-const events = [
-    {time:1, type:'pass', from:'A1', to:'A2', text:'A1 passed to A2'},
-    {time:3, type:'pass', from:'A2', to:'A3', text:'A2 passed to A3'},
-    {time:5, type:'goal', player:'A3', text:'GOAL by A3!'},
-    {time:8, type:'card', player:'B4', text:'Yellow card for B4'},
-    {time:10, type:'pass', from:'B2', to:'B3', text:'B2 passed to B3'},
-    {time:12, type:'goal', player:'B3', text:'GOAL by B3!'}
-];
-
-// Function to move ball
-function moveBall(holder) {
-    const playerDiv = document.getElementById(holder);
-    ballDiv.style.left = (playerDiv.offsetLeft + 5) + 'px';
-    ballDiv.style.top = (playerDiv.offsetTop + 5) + 'px';
+// Possession bar
+function updatePossession(){
+    teamAPos.style.width=possession.A+'%';
+    teamBPos.style.width=possession.B+'%';
 }
 
-// Simulate events
+// Move ball and draw pass
+function moveBall(holder,from=null){
+    const playerDiv=document.getElementById(holder);
+    const targetX=playerDiv.offsetLeft+5;
+    const targetY=playerDiv.offsetTop+5;
+
+    if(from){
+        const fromDiv=document.getElementById(from);
+        const line=document.createElement('div');
+        line.className='pass-line';
+        const dx=targetX-(fromDiv.offsetLeft+5);
+        const dy=targetY-(fromDiv.offsetTop+5);
+        const length=Math.sqrt(dx*dx+dy*dy);
+        const angle=Math.atan2(dy,dx)*180/Math.PI;
+        line.style.width=length+'px';
+        line.style.left=(fromDiv.offsetLeft+5)+'px';
+        line.style.top=(fromDiv.offsetTop+5)+'px';
+        line.style.transform=`rotate(${angle}deg)`;
+        pitch.appendChild(line);
+        setTimeout(()=>line.style.opacity='0',1000);
+        setTimeout(()=>line.remove(),1500);
+    }
+
+    ballDiv.style.left=targetX+'px';
+    ballDiv.style.top=targetY+'px';
+
+    // Highlight holder
+    document.querySelectorAll('.player').forEach(p=>p.style.boxShadow='none');
+    playerDiv.style.boxShadow='0 0 15px 3px yellow';
+}
+
+// Simulated events
+const events=[
+    {time:1,type:'pass',from:'A1',to:'A2',text:'A1 passed to A2'},
+    {time:3,type:'pass',from:'A2',to:'A3',text:'A2 passed to A3'},
+    {time:5,type:'goal',player:'A3',text:'GOAL by A3!'},
+    {time:7,type:'card',player:'B4',text:'Yellow card for B4'},
+    {time:9,type:'pass',from:'B2',to:'B3',text:'B2 passed to B3'},
+    {time:12,type:'goal',player:'B3',text:'GOAL by B3!'}
+];
+
 let i=0;
-function nextEvent() {
+function nextEvent(){
     if(i>=events.length) return;
-    const e = events[i];
-    if(e.type==='pass') {
-        ball.holder = e.to;
-        moveBall(ball.holder);
-    } else if(e.type==='goal' || e.type==='card') {
-        // highlight player briefly
-        const pDiv = document.getElementById(e.player);
+    const e=events[i];
+
+    if(e.type==='pass'){
+        const prevHolder=ball.holder;
+        ball.holder=e.to;
+        moveBall(ball.holder,prevHolder);
+        possession.A=Math.max(30,Math.min(70,possession.A+(Math.random()*10-5)));
+        possession.B=100-possession.A;
+        updatePossession();
+    } else if(e.type==='goal'){
+        if(e.player.startsWith('A')) score.A++;
+        else score.B++;
+        scoreboard.innerText=score.A+' - '+score.B;
+        const pDiv=document.getElementById(e.player);
         pDiv.style.border='2px solid yellow';
         setTimeout(()=>pDiv.style.border='none',1000);
+    } else if(e.type==='card'){
+        const pDiv=document.getElementById(e.player);
+        pDiv.style.border='2px solid red';
+        setTimeout(()=>pDiv.style.border='none',1000);
     }
-    // Add to event list
-    const div = document.createElement('div');
-    div.className='event ' + e.type;
+
+    const div=document.createElement('div');
+    div.className='event '+e.type;
     div.innerText=e.text;
     eventList.appendChild(div);
-    eventList.scrollTop = eventList.scrollHeight;
+    eventList.scrollTop=eventList.scrollHeight;
     i++;
 }
 
-// Initial ball position
+// Initial render
 moveBall(ball.holder);
+updatePossession();
 
-// Run events every 2 seconds
-setInterval(nextEvent, 2000);
+// Event loop
+setInterval(nextEvent,2000);
+
+// Match Timer
+let seconds=0;
+setInterval(()=>{
+    seconds++;
+    const mins=Math.floor(seconds/60);
+    const secs=seconds%60;
+    matchTimer.innerText=`${mins}:${secs.toString().padStart(2,'0')}`;
+},1000);
 
 </script>
 </body>
